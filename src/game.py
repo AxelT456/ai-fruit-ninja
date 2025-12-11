@@ -4,7 +4,7 @@ import random
 import math
 
 class Fruit:
-    def __init__(self, screen_width=1280, screen_height=720):
+    def __init__(self, screen_width=1280, screen_height=720, is_bomb=False):
         """
         Initializes a Fruit object with random position and type.
         """
@@ -21,9 +21,15 @@ class Fruit:
         self.speed_y = random.randint(-35, -28) # Upward velocity
         self.gravity = 1 # Gravity effect
 
+        #Bomb
+        self.is_bomb=is_bomb
+
         # Appearance
-        colors = [(0,255,0), (0,0,255), (0,165,255), (0,255,255)]
-        self.color = random.choice(colors)
+        colors = [(0,255,0), (0,165,255), (0,255,255)]
+        if self.is_bomb:
+            self.color = (0,0,255)
+        else:
+            self.color = random.choice(colors)
         self.radius = 60 # Size of the fruit
 
     def update(self):
