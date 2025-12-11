@@ -36,19 +36,29 @@ def main():
         frame = detector.find_hands(frame, draw=False)
         lm_list = detector.find_position(frame)
 
+        index_x, index_y = None, None
+
         if len(lm_list) != 0:
-            x_index, y_index = lm_list[8][1], lm_list[8][2]  # Tip of the index finger
-            cv2.circle(frame, (x_index, y_index), 15, (255, 0, 255), cv2.FILLED)
+            index_x, index_y = lm_list[8][1], lm_list[8][2]
+            cv2.circle(frame, (index_x, index_y), 20, (0, 255, 0), cv2.FILLED)
 
+        # Manage fruit spawning
         current_time = time.time()
-
         if current_time - last_spawn_time > spawn_interval:
             fruits.append(Fruit(screen_width=WIDTH, screen_height=HEIGHT))
             last_spawn_time = current_time
 
-        for fruit in fruits[:]:
+        # Colision logic and fruit updates
+        for fruit in fruits[:]: 
             fruit.draw(frame)
             active = fruit.update()
+            
+            if index_x is not None and index_y is not None:
+                if fruit.check_collision(index_x, index_y):
+
+                    print("¡Cut Fruit!") 
+                    fruits.remove(fruit) # Erase fruit on collision
+                    continue 
 
             if not active:
                 fruits.remove(fruit)

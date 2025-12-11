@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import random
+import math
 
 class Fruit:
     def __init__(self, screen_width=1280, screen_height=720):
@@ -45,3 +46,16 @@ class Fruit:
         """
 
         cv2.circle(img, (int(self.x), int(self.y)), self.radius, self.color, cv2.FILLED)
+
+    def check_collision(self, finger_x, finger_y):
+        """
+        Calculate if the finger collides with the fruit.
+        Returns True if collision occurs, False otherwise.
+        """
+        #Distance between finger and fruit center
+        distance = math.sqrt((self.x - finger_x)**2 + (self.y - finger_y)**2)
+
+        if distance < self.radius:
+            return True
+        else:
+            return False
