@@ -100,5 +100,7 @@ pip install -r requirements.txt
 
 Contributions are welcome! Feel free to open issues or submit pull requests to improve the game mechanics or add new features.
 
+## 📧 Contacto
 
+axurmen214@gmail.com
 Develop by Axel Tapia 🐐
