@@ -2,35 +2,35 @@ import cv2
 import numpy as np
 import random
 import math
+from src.utils import overlay_transparent
 
 class Fruit:
-    def __init__(self, screen_width=1280, screen_height=720, is_bomb=False):
+    def __init__(self, screen_width, screen_height, image, is_bomb=False):
         """
         Initializes a Fruit object with random position and type.
         """
 
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.image = image
+        self.is_bomb = is_bomb
+
+        if self.image is not None:
+            self.image = cv2.resize(self.image, (80, 80))
 
         # Initial position: Lower part of the screen with random x-coordinate
         self.x = random.randint(100, screen_width - 100)
         self.y = screen_height + 50  # Start off-screen
 
         # Physics / Velocity
-        self.speed_x = random.randint(-10,10)
-        self.speed_y = random.randint(-35, -28) # Upward velocity
-        self.gravity = 1 # Gravity effect
-
-        #Bomb
-        self.is_bomb=is_bomb
-
-        # Appearance
-        colors = [(0,255,0), (0,165,255), (0,255,255)]
+        self.speed_x = random.randint(-10, 10)
+        
         if self.is_bomb:
-            self.color = (0,0,255)
+            self.speed_y = random.randint(-40, -32)
         else:
-            self.color = random.choice(colors)
-        self.radius = 60 # Size of the fruit
+            self.speed_y = random.randint(-35, -28) # Upward velocity
+            
+        self.gravity = 1 # Gravity effect
 
     def update(self):
         """
@@ -48,20 +48,17 @@ class Fruit:
     
     def draw(self, img):
         """
-        Draws the fruit on the given image.
+        Draws the fruit on the given image using the PNG sprite.
         """
-
-        cv2.circle(img, (int(self.x), int(self.y)), self.radius, self.color, cv2.FILLED)
+        if self.image is not None:
+            overlay_transparent(img, self.image, int(self.x), int(self.y))
 
     def check_collision(self, finger_x, finger_y):
         """
         Calculate if the finger collides with the fruit.
         Returns True if collision occurs, False otherwise.
         """
-        #Distance between finger and fruit center
-        distance = math.sqrt((self.x - finger_x)**2 + (self.y - finger_y)**2)
-
-        if distance < self.radius:
+        if (self.x < finger_x < self.x + 80) and (self.y < finger_y < self.y + 80):
             return True
-        else:
-            return False
+        
+        return False

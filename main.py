@@ -2,6 +2,7 @@ import cv2
 import time 
 import numpy as np
 import random
+import os
 from collections import deque
 from src.detector import HandDetector
 from src.game import Fruit
@@ -13,7 +14,20 @@ def main():
     cap.set(3, WIDTH) # Width
     cap.set(4, HEIGHT) # Height
 
+    # --- LOAD ASSETS (SPRITES) ---
+    # Loading images from the assets folder
+    img_sandia = cv2.imread("assets/sandia.png", cv2.IMREAD_UNCHANGED)
+    img_naranja = cv2.imread("assets/naranja.png", cv2.IMREAD_UNCHANGED)
+    img_banana = cv2.imread("assets/banana.png", cv2.IMREAD_UNCHANGED) 
+    img_bomb = cv2.imread("assets/bomb.png", cv2.IMREAD_UNCHANGED)
+
+    # Basic check to ensure images are loaded
+    if img_sandia is None or img_bomb is None:
+        print("Error: Images not found in 'assets' folder.")
+        return
+
     score = 0
+    strikes = 0 # Lives lost
     game_over = False
     sword_points = deque(maxlen=10)
 
@@ -77,13 +91,13 @@ def main():
             
             instr1 = "Press 'r' to Restart"
             (i1_w, _), _ = cv2.getTextSize(instr1, font_text, instr_scale, 2)
-            # Center instruction 1 using real_w (Corrected from WIDTH)
+            # Center instruction 1 using real_w 
             cv2.putText(frame, instr1, ((real_w - i1_w)//2, pos_y_title + 170), 
                         font_text, instr_scale, instr_color, 2)
 
             instr2 = "Press 'q' to Quit"
             (i2_w, _), _ = cv2.getTextSize(instr2, font_text, instr_scale, 2)
-            # Center instruction 2 using real_w (Corrected from WIDTH)
+            # Center instruction 2 using real_w 
             cv2.putText(frame, instr2, ((real_w - i2_w)//2, pos_y_title + 210), 
                         font_text, instr_scale, instr_color, 2)
             
@@ -93,6 +107,7 @@ def main():
             if key == ord('q'): break
             if key == ord('r'): 
                 score = 0
+                strikes = 0
                 fruits = []
                 game_over = False
                 sword_points.clear()
@@ -125,13 +140,20 @@ def main():
             cv2.line(frame, sword_points[i-1], sword_points[i], (255, 255, 255), thickness)
 
 
-        # Manage fruit spawning
+        # Manage fruit spawning & Difficulty
         current_time = time.time()
-        if current_time - last_spawn_time > spawn_interval:
+        
+        # Increase difficulty: reduce interval based on score (min 0.3s)
+        dynamic_interval = max(0.3, spawn_interval - (score // 10) * 0.05)
+
+        if current_time - last_spawn_time > dynamic_interval:
             if random.random() < 0.25:
-                fruits.append(Fruit(screen_width=WIDTH, screen_height=HEIGHT, is_bomb=True))
+                # Spawn BOMB
+                fruits.append(Fruit(screen_width=WIDTH, screen_height=HEIGHT, image=img_bomb, is_bomb=True))
             else:
-                 fruits.append(Fruit(screen_width=WIDTH, screen_height=HEIGHT, is_bomb=False))
+                # Spawn FRUIT (Random choice)
+                img_fruit = random.choice([img_sandia, img_naranja, img_banana])
+                fruits.append(Fruit(screen_width=WIDTH, screen_height=HEIGHT, image=img_fruit, is_bomb=False))
 
             last_spawn_time = current_time
 
@@ -140,6 +162,7 @@ def main():
             fruit.draw(frame)
             active = fruit.update()
             
+            # 1. Collision Check
             if index_x is not None and index_y is not None:
                 if fruit.check_collision(index_x, index_y):
                     if fruit.is_bomb:
@@ -149,13 +172,28 @@ def main():
                         fruits.remove(fruit) # Erase fruit on collision
                     continue 
 
+            # 2. Logic for "Missed" fruits (Strikes)
             if not active:
+                # If fruit goes off-screen and it wasn't a bomb, lose a life
+                if not fruit.is_bomb:
+                    strikes += 1
+                    if strikes >= 3:
+                        game_over = True
+                
                 fruits.remove(fruit)
 
-        cv2.rectangle(frame, (0, 0), (300, 100), (0, 0, 0), -1)
-        cv2.putText(frame, f'Score: {score}', (10, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 255), 2)
+        # UI Drawing
+        cv2.rectangle(frame, (0, 0), (300, 110), (0, 0, 0), -1)
         
-        cv2.putText(frame, f'Activate Fruits: {len(fruits)}', (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        # Score
+        cv2.putText(frame, f'Score: {score}', (10, 40), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 255), 2)
+        
+        # Strikes (Visual X X X)
+        strikes_text = "X " * strikes
+        cv2.putText(frame, f'Missed: {strikes_text}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
+        # Debug / Info (Optional)
+        # cv2.putText(frame, f'Active: {len(fruits)}', (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
         cv2.imshow('AI Fruit Ninja - Dev Mode', frame)
 
